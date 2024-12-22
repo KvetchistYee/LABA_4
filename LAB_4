@@ -1,0 +1,233 @@
+#include <iostream>
+#include <fstream>
+#include <cstring>
+#include <cctype>
+#include <string>
+#include <sstream>
+#include <unordered_map>
+#pragma warning(disable : 4996)
+using namespace std;
+
+void removeExtraSpaces(char* inputText) {
+    char temp[1000];
+    int j = 0;
+
+    bool inSpace = false;
+
+    for (int i = 0; inputText[i] != '\0'; ++i) {
+        if (inputText[i] != ' ') {
+            temp[j++] = inputText[i];
+            inSpace = false;
+        }
+        else if (!inSpace) {
+            temp[j++] = ' ';
+            inSpace = true;
+        }
+    }
+    temp[j] = '\0';
+
+    strcpy(inputText, temp);
+}
+
+void removeExtraPunctuation(char* inputText) {
+    char temp[1000];
+    int j = 0;
+
+    for (int i = 0; inputText[i] != '\0'; ++i) {
+        if (ispunct(inputText[i])) {
+            if (i == 0 || !ispunct(inputText[i - 1])) {
+                temp[j++] = inputText[i];
+            }
+        }
+        else {
+            temp[j++] = inputText[i];
+        }
+    }
+    temp[j] = '\0';
+
+    strcpy(inputText, temp);
+}
+void correctCase(char* inputText) {
+    bool newSentence = true;
+
+    for (int i = 0; inputText[i] != '\0'; ++i) {
+        if (newSentence && isalpha(inputText[i])) {
+            inputText[i] = toupper(inputText[i]);
+            newSentence = false;
+        }
+        else {
+            inputText[i] = tolower(inputText[i]);
+        }
+
+        if (inputText[i] == '.' || inputText[i] == '!' || inputText[i] == '?') {
+            newSentence = true;
+        }
+    }
+}
+vector<int> computeLps(string pattern) {
+    int n = pattern.length();
+    vector<int> lps(n, 0);
+    int len = 0;
+    int i = 1;
+
+    while (i < n) {
+        if (pattern[i] == pattern[len]) {
+            len++;
+            lps[i] = len;
+            i++;
+        }
+        else {
+            if (len != 0) {
+                len = lps[len - 1];
+            }
+            else {
+                lps[i] = 0;
+                i++;
+            }
+        }
+    }
+
+    return lps;
+}
+vector<int> kmp(string text, string pattern) {
+    vector<int> lps = computeLps(pattern);
+    vector<int> occurrences;
+    int n = text.length();
+    int m = pattern.length();
+    int i = 0;
+    int j = 0;
+
+    while (i < n) {
+        if (text[i] == pattern[j]) {
+            i++;
+            j++;
+        }
+
+        if (j == m) {
+            occurrences.push_back(i - j);
+            j = lps[j - 1];
+        }
+        else if (i < n && text[i] != pattern[j]) {
+            if (j != 0) {
+                j = lps[j - 1];
+            }
+            else {
+                i++;
+            }
+        }
+    }
+
+    return occurrences;
+}
+void editText(char* inputText) {
+    removeExtraSpaces(inputText);
+    removeExtraPunctuation(inputText);
+    correctCase(inputText);
+}
+void linearSearch(const char* text, const char* pattern) {
+    int textLength = strlen(text);
+    int patternLength = strlen(pattern);
+
+    for (int i = 0; i <= textLength - patternLength; i++) {
+        int j;
+        for (j = 0; j < patternLength; j++) {
+            if (text[i + j] != pattern[j]) {
+                break;
+            }
+        }
+        if (j == patternLength) {
+            cout << "Найдено в позиции: " << i << endl;
+        }
+    }
+}
+
+
+int main() {
+    setlocale(LC_ALL, "RU");
+    char inputText[1000];
+    const int MAX_LENGTH = 1000;
+    char words[MAX_LENGTH][MAX_LENGTH];
+    int wordCount = 0;
+    while (true) {
+        cout << "Введите с клавиатуры(1) или с файла(2), или 0 для выхода: ";
+        int choice;
+        cin >> choice;
+        cin.ignore();
+
+        if (choice == 0) {
+            break;
+        }
+
+        if (choice == 1) {
+            cout << "Введите текст (может не заканчиваться точкой):\n";
+            cin.getline(inputText, sizeof(inputText));
+        }
+        else if (choice == 2) {
+            char fileName[100];
+            cout << "Введите имя файла:\n";
+            cin.getline(fileName, sizeof(fileName));
+
+            ifstream inputFile(fileName);
+            if (!inputFile.is_open()) {
+                cerr << "Ошибка открытия файла!" << endl;
+                continue;
+            }
+
+            inputFile.getline(inputText, sizeof(inputText));
+            inputFile.close();
+            cout << "Текст из файла: " << inputText << endl;
+        }
+        else {
+            cerr << "Неверный выбор!" << endl;
+            continue;
+        }
+   
+        editText(inputText);
+        cout << "Отредактированный текст: " << inputText << endl;
+
+        char* token = strtok(inputText, " ");
+        while (token != nullptr) {
+            strcpy(words[wordCount++], token);
+            token = strtok(nullptr, " ");
+        }
+        cout << "Слова в обратном порядке: ";
+
+        for (int i = wordCount - 1; i >= 0; --i) {
+            cout << words[i] << ' ';
+        }
+        cout << endl;
+        cout << "Количество символов в каждом слове:" << endl;
+
+        for (int i = 0; i < wordCount; ++i) {
+            cout << words[i] << ": " << strlen(words[i]) << " символов" << endl;
+        }
+        char text[MAX_LENGTH];
+        char pattern[MAX_LENGTH];
+
+        cout << "Введите строку: ";
+        cin.getline(text, MAX_LENGTH);
+        cout << "Введите подстроку для поиска: ";
+        cin.getline(pattern, MAX_LENGTH);
+        cout << "Результаты линейного поиска:" << endl;
+        linearSearch(text, pattern);
+        cout << "Введите строку: ";
+        cin.getline(text, MAX_LENGTH);
+        cout << "Введите подстроку для поиска: ";
+        cin.getline(pattern, MAX_LENGTH);
+        cout << "Результаты алгоритма КМП:" << endl;
+        vector<int> occurrences = kmp(text, pattern);
+        if (occurrences.empty()) {
+            cout << "Подстрока не найдена." << endl;
+        }
+        else {
+            cout << "Подстрока найдена в позициях: ";
+            for (int i : occurrences) {
+                cout << i << " ";
+            }
+            cout << endl;
+        }
+
+    }
+
+    return 0;
+}
